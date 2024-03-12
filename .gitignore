@@ -1,3 +1,5 @@
 _*
 cover*.out
 cover*.txt
+.idea
+.idea/*

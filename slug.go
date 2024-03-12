@@ -7,13 +7,12 @@ package slug
 
 import (
 	"bytes"
+	"github.com/gosimple/unidecode"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/gosimple/unidecode"
 )
 
 var (
@@ -43,7 +42,10 @@ var (
 	AppendTimestamp = false
 
 	regexpNonAuthorizedChars = regexp.MustCompile("[^a-zA-Z0-9-_]")
+	regexpHtmlEntitiesChars  = regexp.MustCompile("&.+?;")
+	regexpUrlEntitiesChars   = regexp.MustCompile(`[^%a-z0-9 _-]`)
 	regexpMultipleDashes     = regexp.MustCompile("-+")
+	regexpMultiple2Dashes    = regexp.MustCompile(`\s+`)
 )
 
 //=============================================================================
@@ -113,9 +115,9 @@ func MakeLang(s string, lang string) (slug string) {
 		slug = SubstituteRune(slug, enSub)
 	}
 
-	// Process all non ASCII symbols
-	slug = unidecode.Unidecode(slug)
-
+	if lang != "ja" {
+		slug = unidecode.Unidecode(slug)
+	}
 	if Lowercase {
 		slug = strings.ToLower(slug)
 	}
@@ -124,8 +126,19 @@ func MakeLang(s string, lang string) (slug string) {
 		slug = slug[:MaxLength]
 	}
 
+	slug = ReplaceAllString(slug, arr, "-")
+	slug = ReplaceAllString(slug, arr2, "")
+	slug = ReplaceAllString(slug, arr3, "-")
+	slug = strings.ReplaceAll(slug, "%c3%97", "X")
 	// Process all remaining symbols
-	slug = regexpNonAuthorizedChars.ReplaceAllString(slug, "-")
+	slug = regexpHtmlEntitiesChars.ReplaceAllString(slug, "")
+	slug = strings.ReplaceAll(slug, ".", "-")
+
+	//slug = regexpUrlEntitiesChars.ReplaceAllString(slug, "")
+	if lang != "ja" {
+		slug = regexpNonAuthorizedChars.ReplaceAllString(slug, "-")
+	}
+	slug = regexpMultiple2Dashes.ReplaceAllString(slug, "-")
 	slug = regexpMultipleDashes.ReplaceAllString(slug, "-")
 	slug = strings.Trim(slug, "-_")
 
